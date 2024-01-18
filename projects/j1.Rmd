@@ -1,0 +1,27 @@
+
+```{r}
+# Load the libraries
+library("DESeq2")
+library("pheatmap")
+
+# Create the matrix with the gene expression
+row <- 5
+col <- 10
+values <- sample(1:100,50, T) 
+matrix1 <- matrix(data = values, nrow = row, ncol = col)
+colnames(matrix1) <- c("cond1", "cond2", "cond3", "cond4", "cond5", "ctrl1", "ctrl2", "ctrl3", "ctrl4", "ctrl5")
+rownames(matrix1) <- c("gene1", "gene2","gene3","gene4","gene5")
+
+# Create DEseq object 
+condition <- factor(c("A","A","A","A","A","B","B","B","B","B"))
+dds <- DESeqDataSetFromMatrix(matrix1, DataFrame(condition), ~ condition)
+dds <- DESeq(dds)
+
+# Calculate the fold change value 
+res <- results(dds)
+res
+```
+
+
+
+
