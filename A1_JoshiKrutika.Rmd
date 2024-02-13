@@ -63,6 +63,10 @@ The GSE number of the data set is GSE212591.
 
 # Clean the data and map to HUGO symbols
 ### Downloading the data
+GEOquery package used [@GEOquery]
+
+Biomanager used [@BiocManager]
+
 ```{r message=FALSE}
 # Start by cleaning the data
 # Step one: Download GEOquery and knitr
@@ -250,6 +254,8 @@ The further the distance on plot for certain points, the more different their ge
 In this case, decitabine seems to have the most differentially expressed genes against the control compared to azacitidine and control.
 The last thing to note is that the clusting of points can show different gene expressions across different conditions. [@tzeng_multidimensional_2008]
 In this case, there are clusters observed where decitabine and azacitidine are grouped together, azacitidine and control are grouped together and lastly, there is a solo group with control on the top right.
+
+Package used: Limms [@limma]
 ```{r}
 limma::plotMDS(d, labels=NULL, pch = 1, col = c("darkgreen","blue","yellow")[factor(luk_samples_dt$treatment)])
 legend("topright", legend=levels(factor(luk_samples_dt$treatment)), pch=c(1), col= c("darkgreen","blue","yellow"),title="Class", bty = 'n', cex = 0.75)
@@ -276,4 +282,12 @@ plotMeanVar(d, show.raw.vars = TRUE, show.tagwise.vars=TRUE, show.ave.raw.vars =
 ```{r}
 write.table(normalized_counts, file.path(getwd(),geoid, paste(geoid,"GSE212591_tmm_counts.txt",sep="_")),quote = FALSE,sep="\t",row.names = TRUE)
 ```
+
+# References for packages
+Robinson MD, McCarthy DJ and Smyth GK (2010). edgeR: a Bioconductor package for
+      differential expression analysis of digital gene expression data. Bioinformatics
+      26, 139-140
+      
+Xie Y (2023). _knitr: A General-Purpose Package for Dynamic Report Generation in
+  R_. R package version 1.45, <https://yihui.org/knitr/>.
 
