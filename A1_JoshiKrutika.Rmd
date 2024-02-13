@@ -13,7 +13,7 @@ bibliography: references.bib
 
 **Data source**
 
-The GSE number of the data set is GSE212591. 
+The GSE number of the data set is [GSE212591](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE212591). 
 
 **What does this data set hold?** 
 
@@ -273,15 +273,20 @@ plotBCV(d,col.tagwise = "black",col.common = "red",)
 ```
 
 ### Mean-variance
-The plot produced by Mean-variance Analysis examines how the DE gene changes with the mean. [@levy_prospect_2004]
-In this plot, we can see that the variance increases with the mean level. 
-So this means the genes present are expressed differently in different conditions causing an increase in variance. 
+The plot produced by Mean-variance Analysis is to examine if the assumption of the data set following a negative binomial distribution is accepted [@levy_prospect_2004]. If the data lies near the blue line, we can assume the data set follows a negative binomial distribution. On the other hand, if the data points lie near the back line, then they follow a poisson distribution. In this graphs case, we can say the data set follows a negative binomial distribution as most of the points are near the blue line. 
 ```{r}
 plotMeanVar(d, show.raw.vars = TRUE, show.tagwise.vars=TRUE, show.ave.raw.vars = TRUE, NBline=TRUE, show.binned.common.disp.vars = TRUE)
 ```
+
+# Identifier mapping 
+The data set provided was already Hugo mapped and it did not contain any information identifying the genes(e.g Ensembl number, etc.) thus I could not proceed further with the identifier mapping.
+
 ```{r}
 write.table(normalized_counts, file.path(getwd(),geoid, paste(geoid,"GSE212591_tmm_counts.txt",sep="_")),quote = FALSE,sep="\t",row.names = TRUE)
 ```
+
+
+
 
 # References for packages
 Robinson MD, McCarthy DJ and Smyth GK (2010). edgeR: a Bioconductor package for
