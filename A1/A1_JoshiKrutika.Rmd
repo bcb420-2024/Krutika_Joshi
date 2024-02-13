@@ -1,0 +1,279 @@
+---
+title: "Assignment One"
+author: "Krutika Joshi"
+output:
+  html_document:
+    toc: true
+    theme: united
+bibliography: references.bib
+---
+
+# Basic Information
+## Title of study: Preclinical efficacy of azacitidine and venetoclax for infant KMT2A-rearranged acute lymphoblastic leukemia reveals a new therapeutic strategy
+
+**Data source**
+
+The GSE number of the data set is GSE212591. 
+
+**What does this data set hold?** 
+
+- This study focuses on the effects of two different types of treatment on infants with KMT2A-rearranged B-cell acute lymphoblastic leukemia (ALL)[@cheung_preclinical_2023]. ALL is an aggressive form of cancer that is rare in infants but once presented, causes high mortality rate due to the underdeveloped immune systems of the hosts[@mironova_late_2023]. In addition, the prognosis is not developed which further increases the mortality rates[@brown_treatment_2013]. The first treatment consists of azacitidin with chemotherapy[@cheung_preclinical_2023]. On the other hand, the second treatment consists of decitabine with chemotherapy[@cheung_preclinical_2023]. The researchers focused on the promoter hypermethylation and the overexpression of BCL-2 as this is commonly expressed in ALL[@cheung_preclinical_2023]. 
+
+
+**Why is the dataset of interest to you?** 
+
+- I have a profound interest in cancer biology as I have multiple family members that have been affected by this disease. Specifically, leukemia is the most prominent type of cancer in my lineage. I would like to learn more about managing data sets related to cancer as I plan to focus my grand school research/thesis on Acute lymphocytic leukemia in adult humans. 
+
+**Introduction to the data set used**
+
+- The data set consists of gene expression levels of three different samples testing two different conditions(i.e azacitidin and decitabine). In addition these conditions are tested across multiple cell lines to understand the effect of the conditions/treatment.   
+
+**What are the control and test conditions of the dataset?**
+
+- The control are the cell lines in the samples that have not been treated with azacitidin or decitabine. There are two test conditions, one where the cell lines have been treated with decitabine, and the other condition is where the cell lines have been treated with azacitidin. 
+
+**How many samples in each of the conditions of your dataset?**
+
+- There are three samples for each of the condition. In addition, it is important to note that each sample also has 18 different cell lines associated with it.
+
+**Were there expression values that were not unique for specific genes? How did you handle these?**
+
+- There were no such values in the data set. Every row was unique. 
+
+**Were there expression values that could not be mapped to current HUGO symbols?**
+
+- The data set had all the genes mapped to HUGO symbols so I could not find any that did not map. 
+
+**Were there any outliers in your dataset? How were they handled in the originating paper? How many outliers were removed?**
+
+- The data set was already pre-processed. The data set went through quality control. They removed low counts and applied normalization through TMM. Thus, I did not remove any outliers from the data set. I also felt like all the data points are important for the study as those genes might be differentially expressed thus causing the high/low count.
+
+**How did you handle replicates?**
+
+- I first checked to see if there were any duplicates by using the unique function. There were no duplicates thus I did not have to remove any rows.
+
+**What is the final coverage of your dataset?**
+
+- The final coverage was reads with >87% bases. This was the quality score used by the lab to filter out low counts data. 
+
+**Which normalization method did you use and why?**
+
+- In the paper, the authors told us that they had applied TMM and filtered for low gene counts. I wanted to make sure the results they got and the results I got were the same so I also considered using TMM. In addition, I used TMM because this normalization method would allow me to see the genes that are differentially expressed across the different conditions and cell lines. 
+
+
+# Clean the data and map to HUGO symbols
+### Downloading the data
+```{r message=FALSE}
+# Start by cleaning the data
+# Step one: Download GEOquery and knitr
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("GEOquery")
+library(GEOquery)
+
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+if (!requireNamespace("knitr", quietly = TRUE))
+    install.packages("knitr")
+library(knitr)
+
+# Step two: get the GEO description of dataset
+# GEO description of the data set
+geoid <- "GSE212591"
+gse <- getGEO(geoid ,GSEMatrix=FALSE)
+gse@header$summary
+
+# Information about the platform
+current_gpl <- names(GPLList(gse))[1]
+current_gpl_info <- Meta(getGEO(current_gpl))
+current_gpl
+# The current platform is:
+current_gpl_info$title
+# The Submission data is:
+current_gpl_info$submission_date
+# Last update data:
+current_gpl_info$last_update_date
+# Organism:
+current_gpl_info$organism
+# Number of GEO datasets that use this technology:
+length(current_gpl_info$series_id)
+# Number of GEO samples that use this technology:
+length(current_gpl_info$sample_id)
+
+# Information about the data processing
+gse@gsms[[1]]@header$data_processing[1]
+
+# Expression data file information
+sfilenames = getGEOSuppFiles(geoid, fetch_files = FALSE) 
+sfilenames$fname
+
+# Choosing file
+# My data set had only one file so I had to choose that
+data_filename <- sfilenames$fname[1]
+data_filename
+
+# Get the expression Data
+download_dir <- file.path(getwd())
+#check to see if the file exists already before you download them
+# only download files that we don't have from the set of
+missing_files <- sfilenames$fname[!unlist(
+  lapply(sfilenames$fname, FUN=function(x){
+    file.exists(
+      file.path(download_dir,geoid,x))}))]
+
+if(length(missing_files) > 0){
+  for(i in 1:length(missing_files)){
+  #get the supplementary files
+  sfiles = getGEOSuppFiles(geoid,
+                           filter_regex = missing_files[i],
+                           baseDir = download_dir,
+                           fetch_files = TRUE)
+  }
+}
+
+# Read the data 
+luk_data <- read.table(file.path(download_dir,geoid,data_filename), header=TRUE, check.names=TRUE)
+
+# Check the dimensions
+# There's almost 20k rows which match the description as the prof was saying in class
+dim(luk_data)
+colnames(luk_data)
+kable(luk_data[1:7,1:3], format = "html")
+
+# Further investigation
+gse@gsms[[1]]@header$characteristics_ch1
+gse@gsms[[1]]@header$title
+gse@gsms[[1]]@header$geo_accession
+# Based on the analysis, I was able to determine the meanings of the titles(column names)
+# The CL stands for cell line and the number stands for sample: eg. CL5_C1
+
+# First lets check if there is any NA data
+any(is.na(luk_data))
+# Result is false so there is no blank data
+
+# Second lets see if there is duplicate rows 
+length(unique(rownames(luk_data)))
+length(rownames(luk_data))
+# They both are 18048 thus there is no duplicate rows 
+
+# Additional annotation
+list_of_samples <- gse@gsms
+luk_samples <- do.call(rbind,
+                        lapply(list_of_samples,
+                               FUN=function(x){
+                                 c(x@header$title,
+                                  x@header$characteristics_ch1)}
+                               )
+                        )
+
+# Organize the data 
+colnames(luk_samples) <- c("title", "disease state","cell line", "genotype","treatment")
+luk_samples[,'disease state'] <- gsub(luk_samples[,'disease state'], pattern = "disease state: ", replacement = "")
+luk_samples[,'cell line'] <- gsub(luk_samples[,'cell line'], pattern = "cell line: ", replacement = "")
+luk_samples[,'genotype'] <- gsub(luk_samples[,'genotype'], pattern = "genotype: ", replacement = "")
+luk_samples[,'treatment'] <- gsub(luk_samples[,'treatment'], pattern = "treatment: ", replacement = "")
+# Lets view what luk_samples holds
+luk_samples
+```
+### Assess 
+```{r}
+luk_samples_dt <- data.table::data.table(luk_samples)
+# Lets look at the samples in each treatment(i.e control, azacitidine, decitabine)
+luk_samples_dt[, .(count = .N), by = luk_samples_dt$treatment]
+# Lets look at the samples in each cell line
+luk_samples_dt[, .(count = .N), by = luk_samples_dt$genotype]
+```
+
+
+### Mapping 
+```{r}
+# The data set is already mapped to contain HUGO gene symbols as row identifiers
+```
+
+### Cleaning
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("edgeR")
+library(edgeR)
+
+
+# I set the min read value to be 10 
+min_num_samples <- 10
+luk_data_matrix <- as.matrix(luk_data)
+# When I used the code from the slide I got an error when the cpm function was applied 
+# where the error said we need numeric data
+# So I figured the error occurs because the first column is a char vector(i.e gene name)
+# so ill remove it temporarily and add it later
+gene_names <- luk_data_matrix[, 1]
+
+# Now ill convert the rest of the columns to numeric matrix except the first one 
+luk_data_matrix <- luk_data_matrix[, -1]  
+luk_data_matrix <- apply(luk_data_matrix, 2, as.numeric)
+luk_data_matrix_cpm <- as.matrix(luk_data_matrix)
+
+# Complete the cpm step 
+cpm_data <- edgeR::cpm(luk_data_matrix_cpm)
+
+# Now we will filter the data 
+keep <- rowSums(cpm_data > 1) >= min_num_samples
+filtered_data_matrix <- luk_data_matrix_cpm[keep, ]
+```
+
+# Normalization
+```{r}
+# I will apply TMM 
+d = DGEList(counts=filtered_data_matrix, group=luk_samples_dt$treatment)
+# calculate normalization factors 
+d = calcNormFactors(d)
+# apply cpm on the normalized data. 
+# This is the final data set the question in normalization is asking for 
+normalized_counts <- cpm(d)
+
+# To see the difference in the data before and after normalization, I will use a box plot 
+par(mfrow=c(1, 2))
+# Added a plus 1 because after normalization, the counts might have been set to 0
+log_normalized_counts <- log2(normalized_counts+1)
+log_filtered_data_matrix <- log2(filtered_data_matrix+1)
+boxplot(log_normalized_counts, main = "Boxplot of Counts after normalization", xlab = "Samples", ylab = "Gene counts")
+boxplot(log_filtered_data_matrix, main = "Boxplot of Counts before normalization", xlab = "Samples", ylab = "Gene counts")
+par(mfrow=c(1, 1))
+# The box plots before and after seem to be the same but this makes sense as in the paper, the authors had told us they had already applied TMM 
+# and filtered for low gene count.
+```
+
+# Analysis/Assessment
+### Multidimensional scaling (MDS)
+The MDS allows for visualization of similarities and differences in gene expression data across different samples or conditions. [@tzeng_multidimensional_2008]
+In this case, we can see the difference in the gene expression for the control, decitabine and azacitidine. 
+The further the distance on plot for certain points, the more different their gene expressions. 
+In this case, decitabine seems to have the most differentially expressed genes against the control compared to azacitidine and control.
+The last thing to note is that the clusting of points can show different gene expressions across different conditions. [@tzeng_multidimensional_2008]
+In this case, there are clusters observed where decitabine and azacitidine are grouped together, azacitidine and control are grouped together and lastly, there is a solo group with control on the top right.
+```{r}
+limma::plotMDS(d, labels=NULL, pch = 1, col = c("darkgreen","blue","yellow")[factor(luk_samples_dt$treatment)])
+legend("topright", legend=levels(factor(luk_samples_dt$treatment)), pch=c(1), col= c("darkgreen","blue","yellow"),title="Class", bty = 'n', cex = 0.75)
+```
+
+### Dispersion Analysis
+Dispersion Analysis focuses more on the biological variability instead of the technical variability. [@ouyang_integrating_2016]
+It tells us the spread of the data on a number line. [@ouyang_integrating_2016]
+The closer the points are to the line, the lesser differentialy expressed(DE) genes are present in the data set. [@ouyang_integrating_2016]
+In this case, there seems to be quiet a lot points that are away from the line thus we can say there are quiet a lot of DE genes. 
+```{r}
+model_design <- model.matrix(~luk_samples_dt$treatment+luk_samples_dt$`cell line`)
+d <- estimateDisp(d, model_design)
+plotBCV(d,col.tagwise = "black",col.common = "red",)
+```
+
+### Mean-variance
+The plot produced by Mean-variance Analysis examines how the DE gene changes with the mean. [@levy_prospect_2004]
+In this plot, we can see that the variance increases with the mean level. 
+So this means the genes present are expressed differently in different conditions causing an increase in variance. 
+```{r}
+plotMeanVar(d, show.raw.vars = TRUE, show.tagwise.vars=TRUE, show.ave.raw.vars = TRUE, NBline=TRUE, show.binned.common.disp.vars = TRUE)
+```
+```{r}
+write.table(normalized_counts, file.path(getwd(),geoid, paste(geoid,"GSE212591_tmm_counts.txt",sep="_")),quote = FALSE,sep="\t",row.names = TRUE)
+```
+
