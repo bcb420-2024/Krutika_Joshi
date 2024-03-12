@@ -1,0 +1,366 @@
+---
+title: "Assignment Two"
+author: "Krutika Joshi"
+output:
+  html_document:
+    toc: true
+    theme: united
+bibliography: references.bib
+---
+
+# Breif Overview of A1: Introduction
+As part of the first assignment, I examined gene expression data from a dataset called [GSE212591](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE212591), describing the preclinical efficacy of azacitidine and venetoclax treatments against infants with acute lymphoblastic leukemia (ALL) rearranged in the KMT2A gene. Despite being rare, this form of leukemia is aggressive, with high mortality rates and no established prognosis in infants. Three different samples undergoing treatment with either azacitidine or decitabine are examined in the dataset across multiple cell lines to assess the effects of the treatment. A variety of analyses were conducted to understand the treatment's impact on the dataset, including data cleaning, normalization, and various visual and statistical assessments.
+
+The data handling section ensured that no duplicates or unmapped genes were present in the dataset. This was followed by using counts per million (CPM) to encompass different library depths. Following that, to normalize the data, the TMM (Trimmed Mean of M-values) normalization method was used. To view the differences in the dataset before and after applying TMM and CPM, a box plot was used to visualize the differences. There seemed to be a mild difference in the spread of the dataset, but essentially, the datasets were almost identical before and after cleaning, as this was expected since the authors of the study had already cleaned it.
+
+Compared to the control samples, azacitidine and decitabine treatment differentially induced gene expression. Decitabine's expression profile differed markedly from the control and azacitidine-treated samples based on multidimensional scaling (MDS) and dispersion analysis. The MDS showed evident clustering of the data set based on treatment which will be further explored in A2. Results from A1 showed that azacitidine and decitabine can modulate gene expression in KMT2A-rearranged ALL, offering the possibility of using azacitidine and decitabine for treatment. These treatments need to be studied further which is what will be explored in A2.
+
+# Downloading important packages 
+```{r setup, message=FALSE}
+# Installing and loading important packages
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+library(BiocManager)
+library(gprofiler2)
+library(ComplexHeatmap)
+
+if (!requireNamespace("GEOquery", quietly = TRUE))
+    BiocManager::install("GEOquery")
+library(GEOquery)
+
+if (!requireNamespace("knitr", quietly = TRUE))
+    install.packages("knitr")
+library(knitr)
+
+if (!requireNamespace("edgeR", quietly = TRUE))
+    BiocManager::install("edgeR")
+library(edgeR)
+
+if (!requireNamespace("ggplot2", quietly = TRUE))
+    install.packages("ggplot2")
+library(ggplot2)
+
+if (!requireNamespace("dplyr", quietly = TRUE))
+    install.packages("dplyr")
+library(dplyr)
+
+if (!requireNamespace("circlize", quietly = TRUE))
+    install.packages("circlize")
+library(circlize)
+
+
+
+
+```
+
+
+# Loading objects from A1 
+```{r message=FALSE}
+geoid <- "GSE212591"
+gse <- getGEO(geoid ,GSEMatrix=FALSE)
+sfilenames = getGEOSuppFiles(geoid, fetch_files = FALSE) 
+data_filename <- sfilenames$fname[1]
+download_dir <- file.path(getwd())
+missing_files <- sfilenames$fname[!unlist(
+  lapply(sfilenames$fname, FUN=function(x){
+    file.exists(
+      file.path(download_dir,geoid,x))}))]
+
+if(length(missing_files) > 0){
+  for(i in 1:length(missing_files)){
+  #get the supplementary files
+  sfiles = getGEOSuppFiles(geoid,
+                           filter_regex = missing_files[i],
+                           baseDir = download_dir,
+                           fetch_files = TRUE)
+  }
+}
+
+luk_data <- read.table(file.path(download_dir,geoid,data_filename), header=TRUE, check.names=TRUE)
+# Additional annotation
+list_of_samples <- gse@gsms
+luk_samples <- do.call(rbind,
+                        lapply(list_of_samples,
+                               FUN=function(x){
+                                 c(x@header$title,
+                                  x@header$characteristics_ch1)}
+                               )
+                        )
+# Organize the data 
+colnames(luk_samples) <- c("title", "disease state","cell line", "genotype","treatment")
+luk_samples[,'disease state'] <- gsub(luk_samples[,'disease state'], pattern = "disease state: ", replacement = "")
+luk_samples[,'cell line'] <- gsub(luk_samples[,'cell line'], pattern = "cell line: ", replacement = "")
+luk_samples[,'genotype'] <- gsub(luk_samples[,'genotype'], pattern = "genotype: ", replacement = "")
+luk_samples[,'treatment'] <- gsub(luk_samples[,'treatment'], pattern = "treatment: ", replacement = "")
+luk_samples_dt <- data.table::data.table(luk_samples)
+
+# Cleaning
+min_num_samples <- 10
+luk_data_matrix <- as.matrix(luk_data)
+gene_names <- luk_data_matrix[, 1]
+luk_data_matrix <- luk_data_matrix[, -1]  
+luk_data_matrix <- apply(luk_data_matrix, 2, as.numeric)
+row.names(luk_data_matrix) <- gene_names
+luk_data_matrix_cpm <- as.matrix(luk_data_matrix)
+cpm_data <- edgeR::cpm(luk_data_matrix_cpm)
+keep <- rowSums(cpm_data > 1) >= min_num_samples
+filtered_data_matrix <- luk_data_matrix_cpm[keep, ]
+
+# Normalization 
+d = DGEList(counts=filtered_data_matrix, group=luk_samples_dt$treatment)
+d = calcNormFactors(d)
+normalized_counts <- cpm(d)
+```
+
+# Start of A2: Preliminary Analysis 
+MDS Plot
+Package used: Limma [@limma]
+```{r}
+# Set up the plotting window to have 4 plots in a single row
+par(mfrow = c(1, 3))
+
+# Now plot each MDS plot in turn, each will appear in its own slot
+plotMDS(d, labels=NULL, pch=1, col=c("darkgreen","blue","yellow")[factor(luk_samples_dt$treatment)])
+legend("topright", legend=levels(factor(luk_samples_dt$treatment)), pch=c(1), col=c("darkgreen","blue","yellow"), title="Treatment", bty='n', cex=0.75)
+
+
+plotMDS(d, labels=NULL, pch=1, col=c("darkgreen","blue","yellow")[factor(luk_samples_dt$`cell line`)])
+legend("topright", legend=levels(factor(luk_samples_dt$`cell line`)), pch=c(1), col=c("darkgreen","blue","yellow"), title="Cell Line", bty='n', cex=0.75)
+
+
+plotMDS(d, labels=NULL, pch=1, col=c("darkgreen","blue","yellow")[factor(luk_samples_dt$genotype)])
+legend("topright", legend=levels(factor(luk_samples_dt$genotype)), pch=c(1), col=c("darkgreen","blue","yellow"), title="Cell Line", bty='n', cex=0.75)
+```
+
+From the MDS plot created above, there was overlap between clustering of the treatment groups and cell lines. Using this, I choose one of the independent variables to be the treatment group. Notice that the genotype and cell line variables produce similar clustering, thus I chose cell line because the clustering seem to overlap with treatment more than genotype.
+
+
+# Differential Gene Expression
+```{r}
+# Creating the model with the cell line and the treatment on the cells as the independent variables 
+model_design_pat <- model.matrix(~ luk_samples_dt$treatment + luk_samples_dt$`cell line`)
+model_design_pat[1:5,1:5]
+
+# Estimating the dispersion 
+d = DGEList(counts=filtered_data_matrix, group=luk_samples_dt$treatment)
+d <- estimateDisp(d, model_design_pat) 
+fit <- glmQLFit(d, model_design_pat)
+
+# Perform the Quasi likelihood test 
+qlf.Azacitidine_vs_Decitabine <- glmQLFTest(fit, coef=ncol(model_design_pat))
+
+# Extract top hits 
+qlf_output_hits <- topTags(qlf.Azacitidine_vs_Decitabine, sort.by = "PValue", n = nrow(d))
+
+# With the p-value set to be 0.05, determine how many were accepted after the test
+length(which(qlf_output_hits$table$PValue < 0.05))
+length(qlf_output_hits$table$PValue)
+# With fdr correction, determine how many were accepted after the test
+length(which(qlf_output_hits$table$FDR < 0.05))
+```
+
+Calculate p-values for each of the genes in your expression set. How many genes were significantly differentially expressed? What thresholds did you use and why?
+
+-  6545 out of the 13721 genes were significantly expressed with a threshold of 0.05 for the p-values. I used 0.05 as the threshold as it typically has a good balance between type I and type II errors. 
+
+Multiple hypothesis testing - correct your p-values using a multiple hypothesis correction method. Which method did you use? And Why? How many genes passed correction?
+
+- I used FDR correction with 5538 genes passing this multiple hypothesis test. I used FDR because more significant results are produced compared to Bonferroni. Bonferroni is more restrictive and thus has more possibility of type II errors. 
+
+# Creating Volcano Plot 
+```{r}
+results <- qlf_output_hits$table
+
+# Create the important variables 
+results$logP <- -log10(results$FDR)
+results <- results %>%
+  mutate(expression = case_when(
+    logFC > 0.25 & results$FDR < 0.05 ~ "Upregulated",
+    logFC < -0.25 & results$FDR < 0.05 ~ "Downregulated",
+    TRUE ~ "No change"
+  ))
+
+# Create the volcano plot
+ggplot(results, aes(x = results$logFC, y = results$logP, color = expression)) +
+  geom_point(alpha = 0.5) +
+  scale_color_manual(values = c('red', 'grey', 'blue')) +
+  theme_minimal() +
+  labs(x = "Log Fold Change", y = "Log 2 FDR values", title = "Volcano Plot") +
+  geom_vline(xintercept = c(-0.25, 0.25), linetype = "dotted") +
+  geom_hline(yintercept = -log2(0.05), linetype = "dotted")
+```
+
+The volcano plot provides a brief visualization of differentially expressed genes [@li_volcano_2012]. It uses a color code to indicate gene expression levels where red points represent downregulated genes, blue points represent upregulated genes, and grey points represent genes with no significant change. The vertical dotted lines at -0.25 and 0.25 on the x-axis showcase the thresholds for classifying genes as downregulated or upregulated, respectively. The horizontal dotted line on the y-axis marks the threshold for statistical significance in terms of the False Discovery Rate (FDR). There seem to be three points in the upregulated segment of the plot which hold a value greater than 12 for the log fold change which means there should be further examination of these genes.
+
+# Heatmap 
+```{r message = FALSE}
+# Storing the top hits with an FDR value that is lesser than 0.05
+top_hits <- rownames(qlf_output_hits$table)[qlf_output_hits$table$FDR < 0.05]
+
+# Scale the top hits for the heatmap
+heatmap_matrix_tophits <- t(
+  scale(t(normalized_counts[which(rownames(normalized_counts) %in% top_hits),])))
+
+# Determine the color scheme based on the values
+if(min(heatmap_matrix_tophits) == 0){
+  heatmap_col = colorRamp2(c( 0, max(heatmap_matrix_tophits)),
+                           c( "white", "red"))
+  } else {
+    heatmap_col = colorRamp2(c(min(heatmap_matrix_tophits), 0,
+                               max(heatmap_matrix_tophits)), c("blue", "white", "red"))
+  }
+
+# define colors for the different factors 
+unique_treatment <- unique(luk_samples_dt$treatment) 
+unique_treatmentcolors <- rainbow(n = length(unique_treatment))
+names(unique_treatmentcolors) <- unique_treatment
+
+unique_cellline <- unique(luk_samples_dt$'cell line')
+unique_celllinecolors <- rainbow(n = length(unique_cellline))
+names(unique_celllinecolors) <- unique_cellline
+
+# Create the heatmap
+ha_pat <- HeatmapAnnotation(df = data.frame(
+  treatment = luk_samples_dt$treatment,
+  cellline = luk_samples_dt$'cell line'),
+  col = list(
+    treatment = unique_treatmentcolors,
+    cellline = unique_celllinecolors),
+  show_legend = TRUE)
+current_heatmap <- Heatmap(as.matrix(heatmap_matrix_tophits),
+                           top_annotation = ha_pat,
+                           cluster_rows = TRUE,cluster_columns = TRUE,show_row_dend = TRUE,
+                           show_column_dend = TRUE, col=heatmap_col,show_column_names = FALSE,
+                           show_row_names = FALSE,show_heatmap_legend = TRUE,
+                           column_title = ("Top hits Treatment vs Cell line"))
+current_heatmap
+```
+
+Visualize your top hits using a heatmap. Do you conditions cluster together? Explain why or why not. Make sure all your figures have proper heading and labels. Every figure included in the report should have a detailed figure legend. 
+
+- The heatmap showcases the impact of the different treatments (i.e Azacitidine and Decitabine) compared to a control on the gene expression level within various cell lines. There is notable clustering within the treatment groups and among the cell lines suggesting shared patterns of gene expression. The control group's gene expression profile is different from the Azacitidine and Decitabine treated samples as observed from the factor. This also implies that genes upregulated in the control are downregulated in treatments and vice versa. I noticed that the gene expression in Azacitidine-treated cells appears to be more scattered across the heatmap compared to Decitabine. This could indicate a potential for an additional factor which was not accounted for in this heatmap. These potential causes need to be further examined and could lie in biological differences or experimental faults. 
+
+# Thresholded overrepresentation analysis
+```{r}
+# Grouping genes 
+upregulatedids <- rownames(qlf_output_hits$table)[which(qlf_output_hits$table$FDR < 0.05 & qlf_output_hits$table$logFC > 0)]
+downregulatedids <- rownames(qlf_output_hits$table)[which(qlf_output_hits$table$FDR < 0.05 & qlf_output_hits$table$logFC < 0)]
+allids <- rownames(qlf_output_hits$table)
+
+# Running G:profier
+upregulated <- gost(query = upregulatedids, 
+                organism = "hsapiens", significant = FALSE, exclude_iea = TRUE, 
+                correction_method = "fdr", 
+                domain_scope = "annotated", 
+                numeric_ns = "", sources = c("GO:BP", "REAC", "WP"))
+
+downregulated <- gost(query = downregulatedids, 
+                organism = "hsapiens", significant = FALSE, exclude_iea = TRUE, 
+                correction_method = "fdr", 
+                domain_scope = "annotated", 
+                numeric_ns = "", sources = c("GO:BP", "REAC", "WP"))
+
+allgenes <- gost(query = allids, 
+                organism = "hsapiens", significant = FALSE, exclude_iea = TRUE, 
+                correction_method = "fdr", 
+                domain_scope = "annotated", 
+                numeric_ns = "", sources = c("GO:BP", "REAC", "WP"))
+
+# Counting the number of genes in each group 
+num_up <- nrow(upregulated$result)
+num_down <- nrow(downregulated$result)
+num_allgenes <- nrow(allgenes$result)
+
+# Filter based on term size 
+filtered_up <- upregulated $result[which(upregulated $result$term_size <= 250),]
+filtered_down <- downregulated$result[which(downregulated$result$term_size <= 250),]
+filtered_allgenes <- allgenes$result[which(allgenes$result$term_size <= 250),]
+
+```
+
+```{r eval=TRUE}
+# Renaming the columns for the table
+colnames(filtered_up)[colnames(filtered_up) == "term_name"] <- "Term Name"
+colnames(filtered_up)[colnames(filtered_up) == "p_value"] <- "P-value"
+colnames(filtered_up)[colnames(filtered_up) == "term_size"] <- "Term Size"
+colnames(filtered_up)[colnames(filtered_up) == "query_size"] <- "Query Size"
+
+colnames(filtered_down)[colnames(filtered_down) == "term_name"] <- "Term Name"
+colnames(filtered_down)[colnames(filtered_down) == "p_value"] <- "P-value"
+colnames(filtered_down)[colnames(filtered_down) == "term_size"] <- "Term Size"
+colnames(filtered_down)[colnames(filtered_down) == "query_size"] <- "Query Size"
+
+colnames(filtered_allgenes)[colnames(filtered_allgenes) == "term_name"] <- "Term Name"
+colnames(filtered_allgenes)[colnames(filtered_allgenes) == "p_value"] <- "P-value"
+colnames(filtered_allgenes)[colnames(filtered_allgenes) == "term_size"] <- "Term Size"
+colnames(filtered_allgenes)[colnames(filtered_allgenes) == "query_size"] <- "Query Size"
+
+# Creating a visual for the table
+kable(filtered_up[1:12, c("Term Name", "P-value", "Term Size", "Query Size")], 
+      caption = "Table 1: Top pathways for Upregulated Genes")
+
+kable(filtered_down[1:12, c("Term Name", "P-value", "Term Size", "Query Size")], 
+      caption = "Table 2: Top pathways for Downregulated Genes")
+
+kable(filtered_allgenes[1:12, c("Term Name", "P-value", "Term Size", "Query Size")], 
+      caption = "Table 3: Top pathways for All Genes")
+
+```
+
+Which method did you choose and why?
+
+- I used the threshold method. I had thresholds for log fold change and FDR to group the unregulated and downregulated genes. I then placed the gene sets in g:Profiler to identify the top terms for each group(i.e unregulated, downregulated and all genes). I focused on the threshold method because this method seemed like it was most probable in identifying differentially expressed genes with minimized random chance involvement and heightened biological significance. I created the threshold for log fold change because I wanted to choose genes with highest probability of deferential expression. I also had a threshold for the FDR values as I wanted to limit the amount of false positives. 
+
+What annotation data did you use and why? What version of the annotation are you using?
+
+- I used the Gene Ontology: Biological Process(GO:BP) [@noauthor_gene_2004], Reactome(REAC) [@fabregat_reactome_2018], and WikiPathways(WP) [@kutmon_wikipathways_2016] mainly because my research focuses on understanding the biological implications of the treatment on different cell lines of leukemic cells. I chose GO:BP because it focuses on biological processes that the genes might be involved in [@noauthor_gene_2004]. I chose REAC and WP for in-depth analysis on the potential pathways and reactions[@kutmon_wikipathways_2016 & @fabregat_reactome_2018]. I used the 2024-01-01 version for WP, 2024-01-25 version for REAC, and 2024-01-17 version for GO:BP. I found the versions by typing get_version_info() in the console.  
+
+How many genesets were returned with what thresholds?
+
+- There were 10,934 gene sets returned for upregulated genes, 10,844 gene sets returned for downregulated genes, and 15,863 gene sets for all genes. All of them had the threshold value of 250 for the term size to identify the pathways with larger interpretative values.
+
+Run the analysis using the up-regulated set of genes, and the down-regulated set of genes separately. How do these results compare to using the whole list (i.e all differentially expressed genes together vs. the up-regulated and down regulated differentially expressed genes separately)?
+
+- In up regulated gene set, myeloid leukocyte activation was the top term. In down regulated and all gene set, DNA-templated DNA replication term was the top term. The upregulation of myeloid leukocyte activation might suggest that the body has triggered an immune-mediated effect where the treatment might be boosting the body's immune response against leukemia. And the downregulated gene term (i.e DNA-templated DNA replication) might indicate the treatment's potential to decrease or limit leukemic cell proliferation. This suggests potential advantage of using the treatments. 
+
+Present your results with the use of tables and screenshots. All figures should have appropriate figure legends. If using figures create a figures directory in your repo and make sure all references to the figures are relative in your Rmarkdown notebook.
+
+- The tables are present above. 
+
+# Interpretation  
+Do the over-representation results support conclusions or mechanism discussed in the original paper?
+
+- Yes, the results from the over-representation analysis supports the conclusion discussed in the original paper. The original paper highlights that both azacitidine and decitabine play an important role in prolong survival of in vivo infant cells affected by lukemia and exhibiting anti-leukemic effects [@cheung_preclinical_2023-1]. As observed in the over-representation results, there seems to be a upregulation in immune response genes and a down regulation in DNA cell replication gene. The results from the over-representation analysis suggest that the down regulation in DNA cell replication gene is used to decrease proliferation of leukemic cell. In addition, the increase in gene related to myeloid leukocyte activation term suggests an increase in the immune response.   
+
+Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your results.
+
+- Yes, there are publications that support the results seen in this assignment. This research paper focused on using azacitidine and decitabine on infants with Acute Myeloid Leukemia(AML), but previous research papers have used these treatments on the elderly [@santini_clinical_2022 & @moreno_vanegas_clinical_2022]. A study conducted by Vanegas and Badar, showcased azacitidine's effectiveness in older populations with AML [@moreno_vanegas_clinical_2022]. Azacitidine acts as a tumor suppressor gene activator which contributes to a decrease in leukemia and increases immune response genes as supported in the over-representation analyses [@moreno_vanegas_clinical_2022]. Similarly, decitabine also targets older patients diagnosed with AML [@santini_clinical_2022]. The effects decitabine mirrors those of azacitidine, which allow management of AML in elderly. Using these publications, there is information to support the claim that azacitidine and decitabine not only target leukemia cell proliferation, but also stimulate the immune system to enhance tumor suppression. In addition, this treatment works on all stages of life: infant to elderly. 
+
+# References
+
+Davis, S. and Meltzer, P. S. GEOquery: a bridge between the Gene Expression Omnibus (GEO)
+  and BioConductor. Bioinformatics, 2007, 14, 1846-1847
+  
+Gu, Z. (2016) Complex heatmaps reveal patterns and correlations in multidimensional genomic
+  data. Bioinformatics.
+
+Gu, Z. (2014) circlize implements and enhances circular visualization in R. Bioinformatics.
+
+H. Wickham. ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York, 2016.
+
+Kolberg L, Raudvere U, Kuzmin I, Vilo J, Peterson H (2020). “gprofiler2- an R package for
+  gene list functional enrichment analysis and namespace conversion toolset g:Profiler.”
+  _F1000Research_, *9 (ELIXIR)*(709). R package version 0.2.3.
+
+Morgan M, Ramos M (2023). _BiocManager: Access the Bioconductor Project Package Repository_.
+  R package version 1.30.22, <https://CRAN.R-project.org/package=BiocManager>.
+
+Robinson MD, McCarthy DJ and Smyth GK (2010). edgeR: a Bioconductor package for differential
+  expression analysis of digital gene expression data. Bioinformatics 26, 139-140
+  
+Wickham H, François R, Henry L, Müller K, Vaughan D (2023). _dplyr: A Grammar of Data
+  Manipulation_. R package version 1.1.3, <https://CRAN.R-project.org/package=dplyr>.
+  
+Xie Y (2023). _knitr: A General-Purpose Package for Dynamic Report Generation in R_. R
+  package version 1.45, <https://yihui.org/knitr/>.
+  

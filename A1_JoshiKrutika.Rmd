@@ -7,7 +7,6 @@ output:
     theme: united
 bibliography: references.bib
 ---
-
 # Basic Information
 ## Title of study: Preclinical efficacy of azacitidine and venetoclax for infant KMT2A-rearranged acute lymphoblastic leukemia reveals a new therapeutic strategy
 
@@ -214,6 +213,7 @@ gene_names <- luk_data_matrix[, 1]
 # Now ill convert the rest of the columns to numeric matrix except the first one 
 luk_data_matrix <- luk_data_matrix[, -1]  
 luk_data_matrix <- apply(luk_data_matrix, 2, as.numeric)
+row.names(luk_data_matrix) <- gene_names
 luk_data_matrix_cpm <- as.matrix(luk_data_matrix)
 
 # Complete the cpm step 
@@ -284,6 +284,12 @@ The data set provided was already Hugo mapped and it did not contain any informa
 ```{r}
 write.table(normalized_counts, file.path(getwd(),geoid, paste(geoid,"GSE212591_tmm_counts.txt",sep="_")),quote = FALSE,sep="\t",row.names = TRUE)
 ```
+
+
+
+
+
+
 
 
 
