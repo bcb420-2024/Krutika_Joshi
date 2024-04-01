@@ -55,7 +55,49 @@ if(run_gsea){
 
 - I used the GSEAPreRanked method that is part of the GSEA package [@subramanian_gene_2005 and @mootha_pgc-1-responsive_2003]. This method takes in a data file that already has the genes ranked (which is why it is named PreRanked). The ranking for each gene is based on the negative log of the P-value and sign of logFC value of azacitidine and decitabine. 
 
-The gene set I used was a .gmt file taken from the Bader lab labeled as "Human_GOBP_AllPathways_noPFOCR_with_GO_iea_March_01_2024_symbol.gmt".  
+The gene set I used was a .gmt file taken from the Bader lab labeled as "Human_GOBP_AllPathways_noPFOCR_with_GO_iea_March_01_2024_symbol.gmt". Based on the title of these gene set, it is evident that the gene set pertains to humans. It contains Gene Ontology Biological Processes(GOBP) which can be used in identifying molecular functions. The keyword AllPathways suggests that all biological pathways are present.   
 
 The version of GSEA I used was 4.3.3. The version of the gene set I used was dated March 1, 2024.  
 
+
+2.) Summarize your enrichment results.
+
+- Based on the results, there were 3089 gene sets that were up-regulated out of 5074. Out of the 3089 gene sets, only 421 gene sets had an FDR value of below 0.25. Identifying gene sets under this FDR value helps identify the pathways with stronger relevance. There were 257 genes set with p-value of less than 0.01 and 554 gene sets with p-value of 0.05. The up-regulated enrichment result stated LEUKOCYTE CHEMOTAXIS%GOBP%GO:0030595 as the top pathway. This pathway had an enrichment score of 0.79607016 which represents a significant over representation of this pathway compared to the other up-regulated genes. The FDR value received for this pathway is 0 which indicates that after correcting for multiple hypothesis testing, the significance is still high. 
+
+
+- In terms of the down regulated gene sets, 1985 out of 5074 gene sets were down regulated. Out of the 1985, only 89 gene sets were significantly enriched at FDR value of 0.25. Which means about 89 gene sets were most likely significantly down regulated after correcting for multiple hypothesis testing. 97 gene sets were significantly enriched at the pvalue of 0.01 and 260 gene sets are significantly enriched at pvalue of 0.05. The top pathway that was downregulated was PROTEINOGENIC AMINO ACID METABOLIC PROCESS%GOBP%GO:0170039 with the ES of -0.68892586. This suggests that there is a significant under representation of this pathway compared to the other down-regulated genes. This has a FDR value of 0.001806672 which suggests a high significance of this pathway to down-regulation. 
+
+3.) How do these results compare to the results from the thresholded analysis in Assignment #2. Compare qualitatively. Is this a straight forward comparison? Why or why not?
+
+When comparing G:Profiler with GSEA, due to the methodologies and the gene sets used being different, I don't think the comparison is very straightforward. That being said there are some aspects that are straight forward such as finding the general theme.
+
+For example, G:Profiler identified myeloid leukocyte activation as a top up-regulated gene set, while GSEA highlighted Leukocyte Chemotaxis. Both terms relate to the activation and movement of leukocytes, suggesting an increase in the immune response. Due to this common instance in both the G:Profiler and GSEA, it can we seen that the treatment appears to influence the immune system.Same with down regulation where G:Profiler said DNA-templated DNA replication pathway was down regulated meanwhile GSEA said proteinogenic amino acid metabolic process was down regulated. Both of these pathway seem to suggest reduction in the metabolic activities.
+
+Now focusing on the complexities, G:Profiler and GSEA use different methods. G:Profiler looks at the overrepresentation of gene sets that is defined as upregulated or downregulated genes though a threshold value. But, GSEA does not use a threshold value and focuses on the enrichment value instead. This allows GSEA to examine genes without the needed to state if they are up or down regulated. Now focusing on the interpretation of the data, although the results might suggest an overall theme, the specific pathways vary. Like for example leukocyte chemotaxis implies recruitment of immune cells to the infection but myeloid leukocyte activation might indicate 
+a general upregulation of immune cells activity. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+- For G:Profiler, the up regulated gene set gave the result as myeloid leukocyte activation. Meanwhile GSEA gave the result as Leukocyte Chemotaxis. 
+
+
+was the top term. In down regulated and all gene set, DNA-templated DNA replication term was the top term. The upregulation of myeloid leukocyte activation might suggest that the body has triggered an immune-mediated effect where the treatment might be boosting the body's immune response against leukemia. And the downregulated gene term (i.e DNA-templated DNA replication) might indicate the treatment's potential to decrease or limit leukemic cell proliferation. This suggests potential advantage of using the treatments. 
