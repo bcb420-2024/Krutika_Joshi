@@ -1,0 +1,61 @@
+---
+title: "Assignment Three"
+author: "Krutika Joshi"
+output:
+  html_document:
+    toc: true
+    theme: united
+bibliography: references.bib
+---
+
+# Introduction 
+
+
+
+
+# Part 1: Non-thresholded Gene set Enrichment Analysis
+```{r child = '../A2/A2_JoshiKrutika.Rmd'}
+#path to GSEA jar 
+gsea_jar <- "../GSEA_4.3.3/gsea-cli.sh"
+working_dir <- "data/"
+output_dir <- "./generated_data/"
+analysis_name <- "azacitidine_vs_decitabine"
+
+#compute ranks
+qlf_output_hits_withgn <- as.data.frame(qlf_output_hits)
+qlf_output_hits_withgn$rank <- -log(qlf_output_hits_withgn$PValue, base = 10) * sign(qlf_output_hits_withgn$logFC)
+qlf_output_hits_withgn <- qlf_output_hits_withgn[order(qlf_output_hits_withgn$rank), ]
+
+#sort table by ranks
+qlf_output_hits_withgn <- qlf_output_hits_withgn[order(qlf_output_hits_withgn$rank, decreasing = TRUE),]
+qlf_output_hits_withgn$gene_name <- rownames(qlf_output_hits_withgn)
+rank_file <- qlf_output_hits_withgn[, c("gene_name", "rank")]
+# Write it to a .rnk file
+write.table(rank_file, file = "./data/azacitvsdecit_RNASeq_ranks.rnk", sep = "\t", quote = FALSE, row.names = FALSE)
+rnk_file <- "azacitvsdecit_RNASeq_ranks.rnk"
+
+run_gsea <- TRUE
+dest_gmt_file = file.path(output_dir, "Human_GOBP_AllPathways_noPFOCR_with_GO_iea_March_01_2024_symbol.gmt")
+
+# Run GSEA 
+if(run_gsea){
+  command <- paste("",gsea_jar,  
+                   "GSEAPreRanked -gmx", dest_gmt_file, 
+                   "-rnk" ,file.path(working_dir, rnk_file), 
+                   "-collapse false -nperm 1000 -scoring_scheme weighted", 
+                   "-rpt_label ",analysis_name,
+                   "  -plot_top_x 20 -rnd_seed 12345  -set_max 200",  
+                   " -set_min 15 -zip_report false ",
+                   " -out" ,output_dir, 
+                   " > gsea_output.txt",sep=" ")
+  system(command)
+}
+```
+1.) What method did you use? What genesets did you use? Make sure to specify versions and cite your methods.
+
+- I used the GSEAPreRanked method that is part of the GSEA package [@subramanian_gene_2005 and @mootha_pgc-1-responsive_2003]. This method takes in a data file that already has the genes ranked (which is why it is named PreRanked). The ranking for each gene is based on the negative log of the P-value and sign of logFC value of azacitidine and decitabine. 
+
+The gene set I used was a .gmt file taken from the Bader lab labeled as "Human_GOBP_AllPathways_noPFOCR_with_GO_iea_March_01_2024_symbol.gmt".  
+
+The version of GSEA I used was 4.3.3. The version of the gene set I used was dated March 1, 2024.  
+

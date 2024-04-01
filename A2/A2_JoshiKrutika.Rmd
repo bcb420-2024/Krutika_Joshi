@@ -233,7 +233,7 @@ current_heatmap <- Heatmap(as.matrix(heatmap_matrix_tophits),
                            show_column_dend = TRUE, col=heatmap_col,show_column_names = FALSE,
                            show_row_names = FALSE,show_heatmap_legend = TRUE,
                            column_title = ("Top hits Treatment vs Cell line"))
-current_heatmap
+# current_heatmap
 ```
 
 Visualize your top hits using a heatmap. Do you conditions cluster together? Explain why or why not. Make sure all your figures have proper heading and labels. Every figure included in the report should have a detailed figure legend. 

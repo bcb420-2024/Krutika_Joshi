@@ -1,0 +1,23 @@
+producer_class	xtools.gsea.GseaPreranked
+producer_timestamp	1711559024577
+param	rpt_label	azacitidine_vs_decitabine
+param	rnd_seed	12345
+param	set_min	15
+param	zip_report	false
+param	create_svgs	false
+param	scoring_scheme	weighted
+param	rnk	/Users/krutikajoshi/Desktop/Year4/BCB420/Git_Repository/A3/data/azacitvsdecit_RNASeq_ranks.rnk
+param	norm	meandiv
+param	out	/Users/krutikajoshi/Desktop/Year4/BCB420/Git_Repository/A3/./generated_data
+param	mode	Max_probe
+param	include_only_symbols	true
+param	help	false
+param	set_max	200
+param	gmx	./generated_data//Human_GOBP_AllPathways_noPFOCR_with_GO_iea_March_01_2024_symbol.gmt
+param	make_sets	true
+param	plot_top_x	20
+param	gui	false
+param	nperm	1000
+param	collapse	No_Collapse
+
+file	./generated_data/azacitidine_vs_decitabine.GseaPreranked.1711559024577/index.html
