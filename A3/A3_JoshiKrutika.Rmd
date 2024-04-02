@@ -10,8 +10,11 @@ bibliography: references.bib
 
 # Introduction 
 
+This study is based on the data set collected from GSE212591. The study focused on the efficacy of azacitidine and decitabine treatments for infant acute lymphoblastic leukemia (ALL). The data handling involved removing duplicates and unmapped genes and was followed by normalization using the Trimmed Mean of M-values (TMM). This was completed to ensure the data set can be compared across different library sizes and treatment conditions.
 
+Using the normalized data, multidimensional scaling (MDS) and dispersion analysis was applied to assess the differential gene expression. MDS provided a visual representation of the treatment effects and showed different clustering of samples based on treatment type. The results showed significant differences in gene expression patterns among azacitidine and decitabine treatments. To elaborate more on the analysis, dispersion analysis further highlighted the variability in gene expression. There was a notably high differentially expressed genes in decitabine-treated samples compared to controls and azacitidine treatments. This suggested that using both decitabine and azacitidine may be helpful in treating ALL. 
 
+G:Profiler was run on the data set to identify the up-regulated and down-regulated pathways. It was found that myeloid leukocyte activation was up-regulated and DNA-templated DNA replication was down regulated. Now, non-threshold analysis will be conducted to further analyse the data followed by graphing the network.
 
 # Part 1: Non-thresholded Gene set Enrichment Analysis
 ```{r child = '../A2/A2_JoshiKrutika.Rmd'}
