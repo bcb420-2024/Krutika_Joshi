@@ -147,7 +147,7 @@ d <- estimateDisp(d, model_design_pat)
 fit <- glmQLFit(d, model_design_pat)
 
 # Perform the Quasi likelihood test 
-qlf.Azacitidine_vs_Decitabine <- glmQLFTest(fit, coef=ncol(model_design_pat))
+qlf.Azacitidine_vs_Decitabine <- glmQLFTest(fit, coef=3)
 
 # Extract top hits 
 qlf_output_hits <- topTags(qlf.Azacitidine_vs_Decitabine, sort.by = "PValue", n = nrow(d))

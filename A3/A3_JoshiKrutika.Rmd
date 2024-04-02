@@ -16,6 +16,22 @@ Using the normalized data, multidimensional scaling (MDS) and dispersion analysi
 
 G:Profiler was run on the data set to identify the up-regulated and down-regulated pathways. It was found that myeloid leukocyte activation was up-regulated and DNA-templated DNA replication was down regulated. Now, non-threshold analysis will be conducted to further analyse the data followed by graphing the network.
 
+# Downloads
+```{r}
+install.packages("GSA")
+
+if (!requireNamespace("circlize", quietly = TRUE))
+    install.packages("circlize")
+library(circlize)
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+library(BiocManager)
+library(gprofiler2)
+library(ComplexHeatmap)
+```
+
+
 # Part 1: Non-thresholded Gene set Enrichment Analysis
 ```{r child = '../A2/A2_JoshiKrutika.Rmd'}
 #path to GSEA jar 
@@ -103,6 +119,87 @@ For the creation of the clustered image, I used the default parameters present. 
 
 - The major theme present in this network are chemotaxis neurophil migration, organization extracurricular matrix and mitochondrial gene translation. These pathways do fit the model as these pathways seem to have a large overlap in the general theme of increased immune response and decresed DNA replication. 
 
-- Some of the pathways are upregulated and others are down regulated. There are some novel pathways such as organization extracurricular matrix and mitochondrial gene translation but there are some old pathways too such as chemotaxis neurophil migration. There are some pathways which are very similar on the clustered table versus the theme network. For example, tissue migration epithelial is present in the clustered pathway network meanwhile tissue migration amebodial is present in the theme network. Both of them are very similar to each other but they do have a notable difference. Overall there seems to be a large overlap between the pathways in the clustered network and the theme network which shows a promising fit within the model. 
+Some of the pathways are upregulated and others are down regulated. There are some novel pathways such as organization extracurricular matrix and mitochondrial gene translation but there are some old pathways too such as chemotaxis neurophil migration. There are some pathways which are very similar on the clustered table versus the theme network. For example, tissue migration epithelial is present in the clustered pathway network meanwhile tissue migration amebodial is present in the theme network. Both of them are very similar to each other but they do have a notable difference. Overall there seems to be a large overlap between the pathways in the clustered network and the theme network which shows a promising fit within the model. 
+
+# Interpretation and detailed view of results
+
+# Dark Matter 
+```{r}
+# Include a heatmap of any significant genes that are not annotated to any of the pathways returned in the enrichment analysis.
+
+library(GSA)
+gmt_file <- file.path(getwd(),"generated_data", "Human_GOBP_AllPathways_noPFOCR_with_GO_iea_March_01_2024_symbol.gmt")
+capture.output(genesets<- GSA.read.gmt(gmt_file),file="gsa_load.out")
+names(genesets$genesets) <- genesets$geneset.names
+
+expression <- read.table("./data/GSE212591_tmm_counts.txt", stringsAsFactors=FALSE)
+
+ranks <- read.table(file.path(getwd(),"data","azacitvsdecit_RNASeq_ranks.rnk"),
+                    header = TRUE, sep = "\t", quote="\"",
+                    stringsAsFactors = FALSE)
+
+gsea_directories <- list.files(path = file.path(getwd(),"generated_data"), pattern = "\\.GseaPreranked")
+
+if(length(gsea_directories) == 1){
+  gsea_dir <- file.path(getwd(),"generated_data",gsea_directories[1])
+  #get the gsea result files
+  gsea_results_files <- list.files(path = gsea_dir,
+                                   pattern = "gsea_report_*.*.tsv")
+  #there should be 2 gsea results files
+  enr_file1 <- read.table(file.path(gsea_dir,gsea_results_files[1]),
+                          header = TRUE, sep = "\t", quote="\"",
+                          stringsAsFactors = FALSE,row.names=1)
+  enr_file2 <- read.table(file.path(gsea_dir,gsea_results_files[1]),
+                          header = TRUE, sep = "\t", quote="\"",
+                          stringsAsFactors = FALSE,row.names=1)
+}
+
+#get the genes from the set of enriched pathways (all threshold)
+all_enr_genesets<- c(rownames(enr_file1), rownames(enr_file2))
+genes_enr_gs <- c()
+for(i in 1:length(all_enr_genesets)){
+  current_geneset <- unlist(genesets$genesets[which(genesets$geneset.names %in% all_enr_genesets[i])])
+  genes_enr_gs <- union(genes_enr_gs, current_geneset)
+}
+
+FDR_threshold <- 0.05
+#get the genes from the set of enriched pathwasy (no matter what thre
+all_sig_enr_genesets <- c(rownames(enr_file1)[which(enr_file1[,"FDR.q.val"] <= FDR_threshold)])
+genes_sig_enr_gs <- c()
+
+for(i in 1:length(all_sig_enr_genesets)){
+  current_geneset <- unlist(genesets$genesets[which(genesets$geneset.names %in% all_sig_enr_genesets[i])])
+  genes_sig_enr_gs <- union(genes_sig_enr_gs, current_geneset)
+}
+
+genes_all_gs <- unique(unlist(genesets$genesets))
+diff_genes <- rownames(qlf_output_hits[qlf_output_hits$table$FDR <= 0.1, ])
+
+# Heatmap 
+dark_matter_genes <- setdiff(diff_genes, genes_enr_gs)
+rownames(expression) <- expression$V1
+expression <- expression[, -1]
+expression_subset_enriched <- expression[dark_matter_genes, ]
+expression_subset_enriched_matrix <- as.matrix(expression_subset_enriched)
+expression_subset_enriched_matrix <- apply(expression_subset_enriched_matrix, 2, as.numeric)
+
+enrichment_matrix <- t(scale(t(expression_subset_enriched_matrix))) 
+
+if(min(enrichment_matrix) == 0){
+  heatmap_col = colorRamp2(c( 0, max(enrichment_matrix)),
+                           c( "white", "red"))
+  } else {
+    heatmap_col = colorRamp2(c(min(enrichment_matrix), 0,
+                               max(enrichment_matrix)), c("blue", "white", "red"))
+    }
+
+current_heatmap <- Heatmap(as.matrix(enrichment_matrix),
+                           show_row_dend = TRUE,show_column_dend = TRUE,
+                           col=heatmap_col,show_column_names = TRUE,
+                           show_row_names = FALSE,show_heatmap_legend = TRUE)
+current_heatmap
+```
+
+# References 
 
 
