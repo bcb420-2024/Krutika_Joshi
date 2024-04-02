@@ -73,31 +73,33 @@ When comparing G:Profiler with GSEA, due to the methodologies and the gene sets 
 
 For example, G:Profiler identified myeloid leukocyte activation as a top up-regulated gene set, while GSEA highlighted Leukocyte Chemotaxis. Both terms relate to the activation and movement of leukocytes, suggesting an increase in the immune response. Due to this common instance in both the G:Profiler and GSEA, it can we seen that the treatment appears to influence the immune system.Same with down regulation where G:Profiler said DNA-templated DNA replication pathway was down regulated meanwhile GSEA said proteinogenic amino acid metabolic process was down regulated. Both of these pathway seem to suggest reduction in the metabolic activities.
 
-Now focusing on the complexities, G:Profiler and GSEA use different methods. G:Profiler looks at the overrepresentation of gene sets that is defined as upregulated or downregulated genes though a threshold value. But, GSEA does not use a threshold value and focuses on the enrichment value instead. This allows GSEA to examine genes without the needed to state if they are up or down regulated. Now focusing on the interpretation of the data, although the results might suggest an overall theme, the specific pathways vary. Like for example leukocyte chemotaxis implies recruitment of immune cells to the infection but myeloid leukocyte activation might indicate 
-a general upregulation of immune cells activity. 
+Now focusing on the complexities, G:Profiler and GSEA use different methods. G:Profiler looks at the overrepresentation of gene sets that is defined as upregulated or downregulated genes though a threshold value. But, GSEA does not use a threshold value and focuses on the enrichment value instead. This allows GSEA to examine genes without the needed to state if they are up or down regulated. Now focusing on the interpretation of the data, although the results might suggest an overall theme, the specific pathways vary. Like for example leukocyte chemotaxis implies recruitment of immune cells to a specific infected location but myeloid leukocyte activation indicates a general upregulation of immune cells activity. 
+
+# Part 2: Visualize your Gene set Enrichment Analysis in Cytoscape
+
+![Enrichhment Map showing azacitidine vs decitabine](./figure/EnrichmentMap.png)
+
+1.) Using your results from your non-thresholded gene set enrichment analysis visualize your results in Cytoscape. Create an enrichment map - how many nodes and how many edges in the resulting map? What thresholds were used to create this map? Make sure to record all thresholds. Include a screenshot of your network prior to manual layout.
+
+- There are 74 nodes and 134 edges in the map. The threshold used for the node cut off was 0.05 and the edge cut of was 0.375. All the other parameters were set to default. The image above shows the map before any layout manipulation. 
+
+Nodes in the map represent gene sets. The node size represents the number of genes in the gene set and the edges represent overlap between gene sets. The thicker the edge, the higher the number of genes that overlap between the two nodes. The legend is red represents Azacitidine and blue represents Decitabine. 
+
+2.) Annotate your network - what parameters did you use to annotate the network. If you are using the default parameters make sure to list them as well.
+
+![Enrichhment Map showing azacitidine vs decitabine with grouped gene sets](./figure/EnrichmentMapGrouped.svg)
+For the creation of the clustered image, I used the default parameters present. The clustering algorithm used is MCL Clustering with the edge weight option as similarity_coefficeint. The max word per labels were 3 and the min word label was 1. The adjacent word bonus was set to 8. In addition, I clicked on the "Publication-Ready" option so that question 3 is completed. 
+
+3.) Make a publication ready figure - include this figure with proper legends in your notebook.
+
+- Attached in the second image 
+
+4.) Collapse your network to a theme network. What are the major themes present in this analysis? Do they fit with the model? Are there any novel pathways or themes?
+
+![Theme network](./figure/ThemeNetwork.svg)
+
+- The major theme present in this network are chemotaxis neurophil migration, organization extracurricular matrix and mitochondrial gene translation. These pathways do fit the model as these pathways seem to have a large overlap in the general theme of increased immune response and decresed DNA replication. 
+
+- Some of the pathways are upregulated and others are down regulated. There are some novel pathways such as organization extracurricular matrix and mitochondrial gene translation but there are some old pathways too such as chemotaxis neurophil migration. There are some pathways which are very similar on the clustered table versus the theme network. For example, tissue migration epithelial is present in the clustered pathway network meanwhile tissue migration amebodial is present in the theme network. Both of them are very similar to each other but they do have a notable difference. Overall there seems to be a large overlap between the pathways in the clustered network and the theme network which shows a promising fit within the model. 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-- For G:Profiler, the up regulated gene set gave the result as myeloid leukocyte activation. Meanwhile GSEA gave the result as Leukocyte Chemotaxis. 
-
-
-was the top term. In down regulated and all gene set, DNA-templated DNA replication term was the top term. The upregulation of myeloid leukocyte activation might suggest that the body has triggered an immune-mediated effect where the treatment might be boosting the body's immune response against leukemia. And the downregulated gene term (i.e DNA-templated DNA replication) might indicate the treatment's potential to decrease or limit leukemic cell proliferation. This suggests potential advantage of using the treatments. 
