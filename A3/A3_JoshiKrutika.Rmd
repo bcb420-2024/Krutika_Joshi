@@ -17,7 +17,8 @@ Using the normalized data, multidimensional scaling (MDS) and dispersion analysi
 G:Profiler was run on the data set to identify the up-regulated and down-regulated pathways. It was found that myeloid leukocyte activation was up-regulated and DNA-templated DNA replication was down regulated. Now, non-threshold analysis will be conducted to further analyse the data followed by graphing the network.
 
 # Downloads
-```{r}
+```{r setup_A3, message=FALSE}
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
 install.packages("GSA")
 
 if (!requireNamespace("circlize", quietly = TRUE))
@@ -27,13 +28,26 @@ library(circlize)
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 library(BiocManager)
+BiocManager::install("edgeR")
+BiocManager::install("ComplexHeatmap")
+BiocManager::install("gprofiler2")
+library(edgeR)
 library(gprofiler2)
 library(ComplexHeatmap)
+
+if (!requireNamespace("GEOquery", quietly = TRUE))
+    BiocManager::install("GEOquery")
+library(GEOquery)
+
 ```
 
 
-# Part 1: Non-thresholded Gene set Enrichment Analysis
+
 ```{r child = '../A2/A2_JoshiKrutika.Rmd'}
+```
+
+# Part 1: Non-thresholded Gene set Enrichment Analysis
+```{r}
 #path to GSEA jar 
 gsea_jar <- "../GSEA_4.3.3/gsea-cli.sh"
 working_dir <- "data/"
@@ -53,7 +67,7 @@ rank_file <- qlf_output_hits_withgn[, c("gene_name", "rank")]
 write.table(rank_file, file = "./data/azacitvsdecit_RNASeq_ranks.rnk", sep = "\t", quote = FALSE, row.names = FALSE)
 rnk_file <- "azacitvsdecit_RNASeq_ranks.rnk"
 
-run_gsea <- TRUE
+run_gsea <- FALSE
 dest_gmt_file = file.path(output_dir, "Human_GOBP_AllPathways_noPFOCR_with_GO_iea_March_01_2024_symbol.gmt")
 
 # Run GSEA 
@@ -70,6 +84,7 @@ if(run_gsea){
   system(command)
 }
 ```
+
 1.) What method did you use? What genesets did you use? Make sure to specify versions and cite your methods.
 
 - I used the GSEAPreRanked method that is part of the GSEA package [@subramanian_gene_2005 and @mootha_pgc-1-responsive_2003]. This method takes in a data file that already has the genes ranked (which is why it is named PreRanked). The ranking for each gene is based on the negative log of the P-value and sign of logFC value of azacitidine and decitabine. 
@@ -107,6 +122,7 @@ Nodes in the map represent gene sets. The node size represents the number of gen
 2.) Annotate your network - what parameters did you use to annotate the network. If you are using the default parameters make sure to list them as well.
 
 ![Enrichhment Map showing azacitidine vs decitabine with grouped gene sets](./figure/EnrichmentMapGrouped.svg)
+
 For the creation of the clustered image, I used the default parameters present. The clustering algorithm used is MCL Clustering with the edge weight option as similarity_coefficeint. The max word per labels were 3 and the min word label was 1. The adjacent word bonus was set to 8. In addition, I clicked on the "Publication-Ready" option so that question 3 is completed. 
 
 3.) Make a publication ready figure - include this figure with proper legends in your notebook.
@@ -123,8 +139,25 @@ Some of the pathways are upregulated and others are down regulated. There are so
 
 # Interpretation and detailed view of results
 
+1.) Do the enrichment results support conclusions or mechanism discussed in the original paper? How do these results differ from the results you got from Assignment #2 thresholded methods
+
+- In the enrichment analysis, it was found that amino acid metabolic processes were downregulated, whereas pathways related to leukocyte chemotaxis were significantly upregulated. These findings support the original paper's discussion of how azacitidine and decitabine could boost immune response and affect gene expression in KMT2A-rearranged infant ALL[@cheung_preclinical_2023-2]. The pathways outputted from GSEA support the hypothesis noted in the paper and suggest the drugs could potentially reactivate tumor suppressor genes. 
+
+GSEA results were different from G:Profiler’s result. G:Profiler examined overrepresented pathways based on upregulated and downregulated genes meanwhile GSEA used the ranked genes to find differentially expressed gene sets and potential pathways. GSEA allowed us to see the pathways that play a significant role in leukemia. In addition, the thresholded analysis emphasized upregulation in leukocyte chemotaxis and down regulation in DNA replication. This gives a very general view of the immune response. Meanwhile GSEA’s pathway allowed for a more focused pathway. In addition, there were some pathways which were present in results created by GSEA but not in G:profiler such as extracellular matrix organization and mitochondrial gene translation. 
+
+This follows the studies that note that the mechanisms followed by azacitidine and decitabine  might exert therapeutic effects[@cheung_preclinical_2023-2]. The results from the assignment suggest that these drugs may have a complex impact on leukemia cells as supported by the study[@cheung_preclinical_2023-2]. The drugs might possibly affect interactions between tumor microenvironment and cellular metabolism[@cheung_preclinical_2023-2].
+
+
+2.) Can you find evidence, i.e. publications, to support some of the results that you see. How does this evidence support your result?
+
+- There are many publications online that suggest the use of azacitidine and decitabine for therapeutic uses in the domain of ALL[@hong_targeting_2021]. It was noted in a study that upregulating leukocyte chemotaxis pathways would enhance the immune system's ability to combat leukemia[@hong_targeting_2021]. A significant role is played by the immune response in controlling and eliminating cancer cells[@hong_targeting_2021]. In the context of leukemia treatment, these pathways might also be crucial for mobilizing immune cells against cancerous cells in order to improve immune function[@hong_targeting_2021].
+
+By affecting leukemia cell’s metabolic and replicative capacities, azacitidine and decitabine might impair their proliferation and survival[@venugopal_dnmt3a_2022]. As discussed in this paper, targeting DNA replication stress may be an effective strategy in the treatment of cancer[@venugopal_dnmt3a_2022]. According to your enrichment analysis, this study demonstrates how DNA replication pathways are essential for cancer cell survival and proliferation[@venugopal_dnmt3a_2022].
+
+The aim of this review is to explain how metabolic pathways can affect immunity by interfering with amino acid metabolism[@tabe_amino_2019]. The downregulation of amino acid metabolic suggests lower survival rate of leukemia cells aligning with the results produced by examining azacitidine and decitabine[@tabe_amino_2019]. 
+
 # Dark Matter 
-```{r}
+```{r, message = FALSE}
 # Include a heatmap of any significant genes that are not annotated to any of the pathways returned in the enrichment analysis.
 
 library(GSA)
@@ -193,13 +226,65 @@ if(min(enrichment_matrix) == 0){
                                max(enrichment_matrix)), c("blue", "white", "red"))
     }
 
-current_heatmap <- Heatmap(as.matrix(enrichment_matrix),
+enrichment_heatmap <- Heatmap(as.matrix(enrichment_matrix),
+                           cluster_rows = TRUE,
+                           cluster_columns = TRUE,
+                           show_row_dend = TRUE,
+                           show_column_dend = TRUE,
+                           col=heatmap_col,
+                           show_column_names = FALSE,
+                           show_row_names = FALSE,
+                           show_heatmap_legend = TRUE,
+                           column_title =("Not annotated significant genes to any pathways from enrichment analysis"))
+
+
+# enrichment_heatmap
+# My Mac doesn't allow the loading of a heatmap so I used the online UOFT R server to load the heat map and attached a screen shot here
+
+# All pathways 
+dark_matter_genes_all <- setdiff(diff_genes, genes_all_gs)
+expression_subset_all <- expression[dark_matter_genes_all, ]
+expression_subset_all_matrix <- as.matrix(expression_subset_all)
+expression_subset_all_matrix <- apply(expression_subset_all_matrix, 2, as.numeric)
+standardized_matrix_all <- t(scale(t(expression_subset_all_matrix))) 
+
+if(min(standardized_matrix_all) == 0){
+  heatmap_col = colorRamp2(c( 0, max(standardized_matrix_all)),
+                           c( "white", "red"))
+  } else {
+    heatmap_col = colorRamp2(c(min(standardized_matrix_all), 0,
+                               max(standardized_matrix_all)), c("blue", "white", "red"))
+    }
+
+
+all_heatmap <- Heatmap(as.matrix(standardized_matrix_all),
                            show_row_dend = TRUE,show_column_dend = TRUE,
                            col=heatmap_col,show_column_names = TRUE,
-                           show_row_names = FALSE,show_heatmap_legend = TRUE)
-current_heatmap
+                           show_row_names = FALSE,show_heatmap_legend = TRUE,
+                           column_title =("Not annotated significant genes to any pathways from all pathways"))
+# all_heatmap 
+# My Mac doesn't allow the loading of a heatmap so I used the online UOFT R server to load the heat map and attached a screen shot here
 ```
+![Enrichhment heatmap](./figure/Enrichment.png)
+![All heatmap](./figure/All.png)
+In the heat map created by examining annotated significant genes to any pathways from enrichment analysis, "CSF3R" was one of the genes present which is part of familial chronic neutrophilic leukemia receptor[@maxson_julia_e_oncogenic_2013]. The Colony Stimulating Factor 3 Receptor is a critical component of the immune system and regulates granulocytes in the blood[@maxson_julia_e_oncogenic_2013]. The heatmap clusters based on the cell lines as it is evident that there is partition. CSF3R is not included in any of the gene sets but has is differential expressed. This is interesting to note as this might suggest that the durgs(i.e Azacitidine and decitabine) affect the chronic neutrophilic leukemia receptor in addition to the other aspects of the immune defense system.  
+
+In the second heatmap created, CD4 is differentially expressed and is not annotated. CD4 is primarily responsible for human defensive mechanisms by recruiting immune cells such as lymphocytes[@khan_comparative_nodate]. Dendritic cells, monocytes, macrophages, and T helper cells contain CD4 glycoprotein on their surfaces [@khan_comparative_nodate]. By recognizing antigens presented by MHC class II molecules, it facilitates the activation of T helper cells in the immune system [@khan_comparative_nodate]. Thus, this might suggest that Azacitidine and decitabine primarily target immuno cells receptors. In addition, the heat map suggest that there are biological conditions in the individuals which cause the expression to differ drastically. 
 
 # References 
+Davis, S. and Meltzer, P. S. GEOquery: a bridge between the Gene Expression Omnibus (GEO) and BioConductor. Bioinformatics, 2007, 14, 1846-1847
+
+Gu, Z. (2016) Complex heatmaps reveal patterns and correlations in multidimensional genomic data. Bioinformatics.
+
+Gu, Z. (2014) circlize implements and enhances circular visualization in R. Bioinformatics.
+
+
+Morgan M, Ramos M (2023). BiocManager: Access the Bioconductor Project Package Repository. R package version 1.30.22, https://CRAN.R-project.org/package=BiocManager.
+
+Robinson MD, McCarthy DJ and Smyth GK (2010). edgeR: a Bioconductor package for differential expression analysis of digital gene expression data. Bioinformatics 26, 139-140
+
+Wickham H, François R, Henry L, Müller K, Vaughan D (2023). dplyr: A Grammar of Data Manipulation. R package version 1.1.3, https://CRAN.R-project.org/package=dplyr.
+
+Xie Y (2023). knitr: A General-Purpose Package for Dynamic Report Generation in R. R package version 1.45, https://yihui.org/knitr/.
 
 
